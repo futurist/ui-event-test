@@ -1,3 +1,5 @@
+UI Test Link: https://futurist.github.io/ui-event-test/
+
 This repo holds the sources for the [UI Events][1] spec.
 
 Editors:
