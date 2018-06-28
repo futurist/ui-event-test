@@ -1,0 +1,420 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+
+<title>Mouse Events</title>
+<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+
+<style type="text/css">
+#options {
+	display: none;
+	margin: 20px;
+}
+#optionstoggle {
+	font-size: 10pt;
+}
+.opttable {
+	border: 1px solid black;
+}
+.optcell {
+	vertical-align: top;
+	padding: 0 10px;
+}
+.opttitle {
+	font-weight: bold;
+}
+.empty {
+	background-color: #ffffff;
+}
+.header {
+	background-color: #d0d0d0;
+	font-weight: bold;
+	border: 1px solid black;
+}
+.keycell {
+	padding: 0 5px 0 5px;
+}
+.modOff {
+	color: #ffd0d0;
+}
+.modOn {
+	color: green;
+}
+.undef {
+	color: #a0a0a0;
+}
+.showfieldoption {
+	font-weight: normal;
+	padding: 0 5px 0 5px;
+	display: inline-block;
+	min-width: 90px;
+	text-align: center;
+}
+#output tr:hover, tr.highlight {
+	background-color: #e0e0e0;
+}
+.div1_color {
+	color: red;
+}
+.div2_color {
+	color: blue;
+}
+.div1 {
+	width: 500px;
+	height: 150px;
+	background-color: red;
+}
+.div2 {
+	width: 300px;
+	height: 150px;
+	margin: 0 auto;
+	background-color: blue;
+}
+body {
+	margin: 10px;
+	padding: 0 20px;
+}
+</style>
+
+<script language="javascript">
+
+var MAX_OUTPUT_ROWS = 100;
+var NUM_HEADER_ROWS = 1;
+
+var last_mousemove = "";
+var count_mousemove = 0;
+
+function clearChildren(e) {
+	while (e.firstChild !== null) {
+		e.removeChild(e.firstChild);
+	}
+}
+
+function setText(e, text) {
+	clearChildren(e);
+	e.appendChild(document.createTextNode(text));
+}
+
+function setUserAgent() {
+	var userAgent = navigator.userAgent;
+	uaDiv = document.getElementById("useragent");
+	setText(uaDiv, userAgent);
+}
+
+function isOldIE() {
+	var ieIndex = navigator.userAgent.indexOf("MSIE");
+	if (ieIndex == -1) {
+		return false;
+	}
+	var ver = parseFloat(navigator.userAgent.substring(ieIndex+5));
+	return ver < 10.0;
+}
+
+function addEventListener(obj, etype, handler) {
+	if (obj.addEventListener) {
+		obj.addEventListener(etype, handler, false);
+	} else if (obj.attachEvent) {
+		obj.attachEvent("on"+etype, handler);
+	} else {
+		obj["on"+etype] = handler;
+	}
+}
+
+function init() {
+	console.log('init');
+	setUserAgent();
+	resetTable();
+
+	addListeners(document.getElementById("div1"));
+	addListeners(document.getElementById("div2"));
+}
+
+function addListeners(div) {
+	addEventListener(div, "click", onClick);
+	addEventListener(div, "dblclick", onDblClick);
+	addEventListener(div, "mousedown", onMouseDown);
+	addEventListener(div, "mouseenter", onMouseEnter);
+	addEventListener(div, "mouseleave", onMouseLeave);
+	addEventListener(div, "mousemove", onMouseMove);
+	addEventListener(div, "mouseout", onMouseOut);
+	addEventListener(div, "mouseover", onMouseOver);
+	addEventListener(div, "mouseup", onMouseUp);
+}
+
+function onClick(e) {
+	handleMouseEvent("click", e);
+}
+
+function onDblClick(e) {
+	handleMouseEvent("dblclick", e);
+}
+
+function onMouseDown(e) {
+	handleMouseEvent("mousedown", e);
+}
+
+function onMouseEnter(e) {
+	handleMouseEvent("mouseenter", e);
+}
+
+function onMouseLeave(e) {
+	handleMouseEvent("mouseleave", e);
+}
+
+function onMouseMove(e) {
+	handleMouseEvent("mousemove", e);
+}
+
+function onMouseOut(e) {
+	handleMouseEvent("mouseout", e);
+}
+
+function onMouseOver(e) {
+	handleMouseEvent("mouseover", e);
+}
+
+function onMouseUp(e) {
+	handleMouseEvent("mouseup", e);
+}
+
+function addOutputRow() {
+	var table = document.getElementById("output");
+	
+	while (table.rows.length > MAX_OUTPUT_ROWS) {
+		table.deleteRow(-1);
+	}
+	return table.insertRow(NUM_HEADER_ROWS);
+}
+
+function handleMouseEvent(etype, e) {
+	console.log(etype);
+	var show = document.getElementById("show_"+etype);
+	if (show.checked) {
+		addMouseEvent(etype, e);
+	}
+	handleDefaultPropagation(etype, e);
+}
+
+function handleDefaultPropagation(etype, e) {
+	var preventDefault = document.getElementById("pd_"+etype);
+	if (preventDefault.checked && e.preventDefault) {
+		e.preventDefault();
+	}
+	var stopPropagation = document.getElementById("sp_"+etype);
+	if (stopPropagation.checked && e.stopPropagation) {
+		e.stopPropagation();
+    }
+}
+
+function addMouseEvent(etype, e) {
+	if (!e) {
+		e = window.event;
+	}
+
+	if (e.type == "mousemove") {
+		var this_mousemove = e.type + "_" + e.currentTarget.id;
+		if (this_mousemove == last_mousemove) {
+			count_mousemove++;
+			updateCount(calcPosition(e.clientX, e.clientY));
+			return;
+		}
+		last_mousemove = this_mousemove;
+	} else {
+		last_mousemove = "";
+		count_mousemove = 0;
+	}
+	
+	var eventinfo = {};
+	eventinfo["etype"] = e.type;
+	eventinfo["data"] = calcString(e.data);
+	eventinfo["id"] = e.currentTarget.id;
+	eventinfo["xy"] = calcPosition(e.clientX, e.clientY);
+	addEvent(eventinfo);
+}
+
+function addEvent(eventinfo) {
+	var row = addOutputRow();
+	var color = eventinfo["id"] + "_color";
+	
+	addTableCell(row, eventinfo["etype"], color);
+
+	addTableCell(row, 0, color);
+	addTableCell(row, eventinfo["id"], color);
+	addTableCell(row, eventinfo["xy"], color);
+}
+
+function updateCount(p) {
+	var table = document.getElementById("output");
+	addInnerText(table.rows[1].cells[1], count_mousemove);
+	addInnerText(table.rows[1].cells[3], p);
+}
+
+function calcString(data) {
+    if (data === undefined) {
+		return data;
+	}
+	return "'" + data + "'";
+}
+
+function calcPosition(x, y) {
+	return '(' + x + ',' + y + ')';
+}
+
+function addClass(obj, className) {
+	if (!isOldIE()) {
+		obj.classList.add(className);
+	}
+}
+
+function addInnerText(obj, text) {
+	if (!isOldIE()) {
+		setText(obj, text);
+	} else {
+		obj.innerText = text;
+	}
+}
+
+function resetTable() {
+	clearTable();
+	createTableHeader();
+}
+
+function clearTable() {
+	clearChildren(document.getElementById("output"));
+}
+
+function addTableCell(row, data, style) {
+	var cell = row.insertCell(-1);
+	if (data === undefined) {
+		data = "-";
+		addClass(cell, "undef");
+	}
+	addInnerText(cell, data);
+	cell.setAttribute("align", "center");
+	addClass(cell, "keycell");
+	if (style !== undefined) {
+		if (style instanceof Array) {
+			for (var i = 0; i < style.length; i++) {
+				addClass(cell, style[i]);
+			}
+		} else {
+			addClass(cell, style);
+		}
+	}
+}
+
+function createTableHeader() {
+	var table = document.getElementById("output");
+	var head = table.createTHead();
+	var row = head.insertRow(-1);
+
+	addTableCell(row, "Event type", "header");
+	addTableCell(row, "count", "header");
+	addTableCell(row, "target", "header");
+	addTableCell(row, "(x,y)", "header");
+}
+
+function toggleOptions() {
+	var link = document.getElementById("optionstoggle");
+	var options = document.getElementById("options");
+	clearChildren(link);
+	if (options.style.display == "block") {
+		options.style.display = "none";
+		addInnerText(link, "Show Options");
+	}
+	else {
+		options.style.display = "block";
+		addInnerText(link, "Hide Options");
+	}
+}
+
+function showFieldClick(cb) {
+	if (isOldIE()) {
+		return;
+	}
+	var celltype = cb.id.split('_')[1];
+	var show = cb.checked;
+	
+	var table = document.getElementById("output");
+	for (var ir = 0, row; row = table.rows[ir]; ir++) {
+		for (var ic = 0, cell; cell = row.cells[ic]; ic++) {
+			if (cell.classList.contains(celltype)) {
+				if (show) {
+					cell.style.display = "";
+				} else {
+					cell.style.display = "none";
+				}
+			}
+		}
+	}
+}
+
+</script>
+</head>
+
+<body>
+
+<h1>Mouse Events</h1><p>
+
+<p>UserAgent: <span id="useragent"></span>
+</p>
+
+<div id="div1" class="div1">
+<div id="div2" class="div2"></div>
+</div>
+
+<p><input type="button" onclick="resetTable();return false" value="Clear Table"/>
+<a id="optionstoggle" href="javascript:toggleOptions()">Show Options</a>
+<i>-- Note: The most recent event is at the top.</i>
+</p>
+
+<div id="options">
+<table class="opttable"><tr>
+<td class="optcell">
+	<span class="opttitle">preventDefault</span><br/>
+	<label><input type="checkbox" id="pd_click" /> click</label><br/>
+	<label><input type="checkbox" id="pd_dblclick" /> dblclick</label><br/>
+	<label><input type="checkbox" id="pd_mousedown" /> mousedown</label><br/>
+	<label><input type="checkbox" id="pd_mouseenter" /> mouseenter</label><br/>
+	<label><input type="checkbox" id="pd_mouseleave" /> mouseleave</label><br/>
+	<label><input type="checkbox" id="pd_mousemove" /> mousemove</label><br/>
+	<label><input type="checkbox" id="pd_mouseout" /> mouseout</label><br/>
+	<label><input type="checkbox" id="pd_mouseover" /> mouseover</label><br/>
+	<label><input type="checkbox" id="pd_mouseup" /> mouseup</label><br/>
+</td><td class="optcell">
+	<span class="opttitle">stopPropagation</span><br/>
+	<label><input type="checkbox" id="sp_click" checked /> click</label><br/>
+	<label><input type="checkbox" id="sp_dblclick" checked /> dblclick</label><br/>
+	<label><input type="checkbox" id="sp_mousedown" checked /> mousedown</label><br/>
+	<label><input type="checkbox" id="sp_mouseenter" checked /> mouseenter</label><br/>
+	<label><input type="checkbox" id="sp_mouseleave" checked /> mouseleave</label><br/>
+	<label><input type="checkbox" id="sp_mousemove" checked /> mousemove</label><br/>
+	<label><input type="checkbox" id="sp_mouseout" checked /> mouseout</label><br/>
+	<label><input type="checkbox" id="sp_mouseover" checked /> mouseover</label><br/>
+	<label><input type="checkbox" id="sp_mouseup" checked /> mouseup</label><br/>
+</td><td class="optcell">
+	<span class="opttitle">Show Events</span><br/>
+	<label><input type="checkbox" id="show_dblclick" checked /> dblclick</label><br/>
+	<label><input type="checkbox" id="show_click" checked /> click</label><br/>
+	<label><input type="checkbox" id="show_mousedown" checked /> mousedown</label><br/>
+	<label><input type="checkbox" id="show_mouseenter" checked /> mouseenter</label><br/>
+	<label><input type="checkbox" id="show_mouseleave" checked /> mouseleave</label><br/>
+	<label><input type="checkbox" id="show_mousemove" checked /> mousemove</label><br/>
+	<label><input type="checkbox" id="show_mouseout" checked /> mouseout</label><br/>
+	<label><input type="checkbox" id="show_mouseover" checked /> mouseover</label><br/>
+	<label><input type="checkbox" id="show_mouseup" checked /> mouseup</label><br/>
+	<i>Applies only to<br/>new events</i>
+</td>
+</tr></table>
+</div>
+
+<table id="output">
+</table>
+
+<script language="javascript">
+init();
+</script>
+
+</body>
+</html>
